@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/utils/pointer"
 	clusterv1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,11 +47,6 @@ var (
 			},
 		},
 	}
-
-	healthyEtcdResponse = &http.Response{
-		StatusCode: http.StatusOK,
-		Body:       io.NopCloser(bytes.NewBufferString("{\"Health\": \"true\"}")),
-	}
 )
 
 type etcdadmClusterTest struct {
@@ -62,13 +56,15 @@ type etcdadmClusterTest struct {
 	cluster        *clusterv1.Cluster
 	etcdadmCluster *etcdv1.EtcdadmCluster
 	machines       []*clusterv1.Machine
+	machineCounter int
 }
 
-func newEtcdadmClusterTest() *etcdadmClusterTest {
+func newEtcdadmClusterTest(etcdReplicas int) *etcdadmClusterTest {
 	return &etcdadmClusterTest{
-		name:      testClusterName,
-		namespace: testNamespace,
-		replicas:  3,
+		name:           testClusterName,
+		namespace:      testNamespace,
+		replicas:       etcdReplicas,
+		machineCounter: 0,
 	}
 }
 
@@ -150,13 +146,13 @@ func (e *etcdadmClusterTest) newEtcdadmCluster(cluster *clusterv1.Cluster) *etcd
 }
 
 func (e *etcdadmClusterTest) newEtcdMachine() *clusterv1.Machine {
-	return &clusterv1.Machine{
+	etcdMachine := &clusterv1.Machine{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Machine",
 			APIVersion: clusterv1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.SimpleNameGenerator.GenerateName(e.etcdadmCluster.Name + "-"),
+			Name:      fmt.Sprintf("%s-%v", e.etcdadmCluster.Name, e.machineCounter),
 			Namespace: e.etcdadmCluster.Namespace,
 			Labels:    EtcdLabelsForCluster(e.cluster.Name, e.etcdadmCluster.Name),
 			UID:       types.UID(uuid.New().String()),
@@ -182,6 +178,8 @@ func (e *etcdadmClusterTest) newEtcdMachine() *clusterv1.Machine {
 			},
 		},
 	}
+	e.machineCounter++
+	return etcdMachine
 }
 
 func (e *etcdadmClusterTest) gatherObjects() []client.Object {
@@ -194,4 +192,11 @@ func (e *etcdadmClusterTest) gatherObjects() []client.Object {
 
 func (e *etcdadmClusterTest) getEtcdClusterName() string {
 	return fmt.Sprintf("%s-%s", e.name, etcdClusterNameSuffix)
+}
+
+func getHealthyEtcdHttpResponse() *http.Response {
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       io.NopCloser(bytes.NewBufferString("{\"Health\": \"true\"}")),
+	}
 }

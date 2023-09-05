@@ -5,8 +5,10 @@
 package mocks
 
 import (
+	"fmt"
 	http "net/http"
 	reflect "reflect"
+	"strings"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -15,6 +17,7 @@ import (
 type MockRoundTripper struct {
 	ctrl     *gomock.Controller
 	recorder *MockRoundTripperMockRecorder
+	ip string
 }
 
 // MockRoundTripperMockRecorder is the mock recorder for MockRoundTripper.
@@ -23,8 +26,8 @@ type MockRoundTripperMockRecorder struct {
 }
 
 // NewMockRoundTripper creates a new mock instance.
-func NewMockRoundTripper(ctrl *gomock.Controller) *MockRoundTripper {
-	mock := &MockRoundTripper{ctrl: ctrl}
+func NewMockRoundTripper(ctrl *gomock.Controller, ip string) *MockRoundTripper {
+	mock := &MockRoundTripper{ctrl: ctrl, ip: ip}
 	mock.recorder = &MockRoundTripperMockRecorder{mock}
 	return mock
 }
@@ -37,6 +40,9 @@ func (m *MockRoundTripper) EXPECT() *MockRoundTripperMockRecorder {
 // RoundTrip mocks base method.
 func (m *MockRoundTripper) RoundTrip(arg0 *http.Request) (*http.Response, error) {
 	m.ctrl.T.Helper()
+	if strings.Contains(arg0.Host,m.ip) {
+		return nil, fmt.Errorf("Error")
+	}
 	ret := m.ctrl.Call(m, "RoundTrip", arg0)
 	ret0, _ := ret[0].(*http.Response)
 	ret1, _ := ret[1].(error)

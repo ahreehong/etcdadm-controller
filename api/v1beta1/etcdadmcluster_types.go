@@ -26,6 +26,8 @@ import (
 const (
 	UpgradeInProgressAnnotation = "etcdcluster.cluster.x-k8s.io/upgrading"
 
+	PausedHealthCheckAnnotation = "etcdcluster.cluster.x-k8s.io/healthcheck-paused"
+
 	// EtcdadmClusterFinalizer is the finalizer applied to EtcdadmCluster resources
 	// by its managing controller.
 	EtcdadmClusterFinalizer = "etcdcluster.cluster.x-k8s.io"
